@@ -10,7 +10,7 @@ type Action struct {
 	Fields []ActionField `json:"fields,omitempty"`
 	Type   string        `json:"type,omitempty"`
 	Title  string        `json:"title,omitempty"`
-	Class  []string      `json:"class,omitempty"`
+	Class  Classes       `json:"class,omitempty"`
 }
 
 // NewAction is a helper for creating a new Action instance.
@@ -61,7 +61,7 @@ type ActionField struct {
 	Type  string      `json:"type,omitempty"`
 	Value interface{} `json:"value,omitempty"`
 	Title string      `json:"title,omitempty"`
-	Class []string    `json:"class,omitempty"`
+	Class Classes     `json:"class,omitempty"`
 }
 
 // NewActionField is a helper for creating a new ActionField instance.

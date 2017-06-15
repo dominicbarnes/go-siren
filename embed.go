@@ -8,14 +8,14 @@ import "gopkg.in/validator.v2"
 // embedded link will only contain attributes that other links have. (eg: href,
 // rel, type, class, title)
 type EmbeddedEntity struct {
-	Rel  []string `json:"rel" validate:"nonzero"`
-	Href string   `json:"href,omitempty"`
 	Entity
+	Rel  Rels   `json:"rel" validate:"nonzero"`
+	Href string `json:"href,omitempty"`
 }
 
 // NewEmbeddedEntity is a helper for creating a new EmbeddedEntity instance that
 // represents an embedded resource.
-func NewEmbeddedEntity(rel []string) *EmbeddedEntity {
+func NewEmbeddedEntity(rel Rels) *EmbeddedEntity {
 	e := NewEntity("")
 	return &EmbeddedEntity{
 		Entity: *e,
@@ -25,7 +25,7 @@ func NewEmbeddedEntity(rel []string) *EmbeddedEntity {
 
 // NewEmbeddedLink is a helper for creating a new EmbeddedEntity instance that
 // represents an embedded link.
-func NewEmbeddedLink(rel []string, href string) *EmbeddedEntity {
+func NewEmbeddedLink(rel Rels, href string) *EmbeddedEntity {
 	e := NewEntity("")
 	return &EmbeddedEntity{
 		Entity: *e,

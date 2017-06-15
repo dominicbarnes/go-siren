@@ -4,15 +4,15 @@ import "gopkg.in/validator.v2"
 
 // Link is a pointer to a related resource.
 type Link struct {
-	Rel   []string `json:"rel" validate:"nonzero"`
-	Href  string   `json:"href" validate:"nonzero"`
-	Type  string   `json:"type,omitempty"`
-	Title string   `json:"title,omitempty"`
-	Class []string `json:"class,omitempty"`
+	Rel   Rels    `json:"rel" validate:"nonzero"`
+	Href  string  `json:"href" validate:"nonzero"`
+	Type  string  `json:"type,omitempty"`
+	Title string  `json:"title,omitempty"`
+	Class Classes `json:"class,omitempty"`
 }
 
 // NewLink is a helper for creating a new Link instance.
-func NewLink(rel []string, href string) *Link {
+func NewLink(rel Rels, href string) *Link {
 	return &Link{Rel: rel, Href: href}
 }
 

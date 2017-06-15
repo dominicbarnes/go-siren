@@ -37,12 +37,12 @@ func TestActionWithTypeMultiple(t *testing.T) {
 
 func TestActionWithClasses(t *testing.T) {
 	a := NewAction("create", "POST", "/posts").WithClasses("a", "b", "c")
-	assert.EqualValues(t, []string{"a", "b", "c"}, a.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c"}, a.Class)
 }
 
 func TestActionWithClassesMultiple(t *testing.T) {
 	a := NewAction("create", "POST", "/posts").WithClasses("a", "b").WithClasses("c", "d")
-	assert.EqualValues(t, []string{"a", "b", "c", "d"}, a.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c", "d"}, a.Class)
 }
 
 func TestActionWithField(t *testing.T) {
@@ -85,12 +85,12 @@ func TestActionFieldWithTitleMultiple(t *testing.T) {
 
 func TestActionFieldWithClasses(t *testing.T) {
 	f := NewActionField("name", "text").WithClasses("a", "b", "c")
-	assert.EqualValues(t, []string{"a", "b", "c"}, f.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c"}, f.Class)
 }
 
 func TestActionFieldWithClassesMultiple(t *testing.T) {
 	f := NewActionField("name", "text").WithClasses("a", "b").WithClasses("c", "d")
-	assert.EqualValues(t, []string{"a", "b", "c", "d"}, f.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c", "d"}, f.Class)
 }
 
 func TestActionFieldWithValue(t *testing.T) {

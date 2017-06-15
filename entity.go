@@ -9,7 +9,7 @@ type Entity struct {
 	Actions    []Action         `json:"actions,omitempty"`
 	Properties Properties       `json:"properties,omitempty"`
 	Title      string           `json:"title,omitempty"`
-	Class      []string         `json:"class,omitempty"`
+	Class      Classes          `json:"class,omitempty"`
 	baseURL    string
 }
 

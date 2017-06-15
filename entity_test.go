@@ -23,12 +23,12 @@ func TestEntityWithTitleMultiple(t *testing.T) {
 
 func TestEntityWithClasses(t *testing.T) {
 	e := NewEntity("").WithClasses("a", "b", "c")
-	assert.EqualValues(t, []string{"a", "b", "c"}, e.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c"}, e.Class)
 }
 
 func TestEntityWithClassesMultiple(t *testing.T) {
 	e := NewEntity("").WithClasses("a", "b").WithClasses("c", "d")
-	assert.EqualValues(t, []string{"a", "b", "c", "d"}, e.Class)
+	assert.EqualValues(t, Classes{"a", "b", "c", "d"}, e.Class)
 }
 
 func TestEntityWithProperties(t *testing.T) {
@@ -52,14 +52,14 @@ func TestEntityWithPropertyMultiple(t *testing.T) {
 }
 
 func TestEntityWithLink(t *testing.T) {
-	l := NewLink([]string{"self"}, "/")
+	l := NewLink(Rels{"self"}, "/")
 	e := NewEntity("").WithLink(l)
 	assert.EqualValues(t, []Link{*l}, e.Links)
 }
 
 func TestEntityWithLinkMultiple(t *testing.T) {
-	l1 := NewLink([]string{"prev"}, "/posts/1")
-	l2 := NewLink([]string{"next"}, "/posts/3")
+	l1 := NewLink(Rels{"prev"}, "/posts/1")
+	l2 := NewLink(Rels{"next"}, "/posts/3")
 	e := NewEntity("").WithLink(l1).WithLink(l2)
 	assert.EqualValues(t, []Link{*l1, *l2}, e.Links)
 }
@@ -78,7 +78,7 @@ func TestEntityWithActionMultiple(t *testing.T) {
 }
 
 func TestEntityEmbed(t *testing.T) {
-	ee := NewEmbeddedEntity([]string{"item"})
+	ee := NewEmbeddedEntity(Rels{"item"})
 	e := NewEntity("").Embed(ee)
 	assert.EqualValues(t, []EmbeddedEntity{*ee}, e.Entities)
 }
@@ -113,16 +113,16 @@ func ExampleEntity() {
 			"status":      "pending",
 		}).
 		Embed(
-			NewEmbeddedLink([]string{"http://x.io/rels/order-items"}, "/orders/42/items").
+			NewEmbeddedLink(Rels{"http://x.io/rels/order-items"}, "/orders/42/items").
 				WithClasses("items", "collection"),
 		).
 		Embed(
-			NewEmbeddedEntity([]string{"http://x.io/rels/customer"}).
+			NewEmbeddedEntity(Rels{"http://x.io/rels/customer"}).
 				WithProperties(Properties{
 					"customerId": "pj123",
 					"name":       "Peter Joseph",
 				}).
-				WithLink(NewLink([]string{"self"}, "/customers/pj123")).
+				WithLink(NewLink(Rels{"self"}, "/customers/pj123")).
 				WithClasses("info", "customer"),
 		).
 		WithAction(NewAction("add-item", "POST", "/orders/42/items").
@@ -131,7 +131,7 @@ func ExampleEntity() {
 			WithField(NewActionField("orderNumber", "hidden").WithValue("42")).
 			WithField(NewActionField("productCode", "text")).
 			WithField(NewActionField("quantity", "number"))).
-		WithLink(NewLink([]string{"self"}, "/orders/42")).
-		WithLink(NewLink([]string{"previous"}, "/orders/41")).
-		WithLink(NewLink([]string{"next"}, "/orders/43"))
+		WithLink(NewLink(Rels{"self"}, "/orders/42")).
+		WithLink(NewLink(Rels{"previous"}, "/orders/41")).
+		WithLink(NewLink(Rels{"next"}, "/orders/43"))
 }
