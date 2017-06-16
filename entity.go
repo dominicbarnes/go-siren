@@ -1,77 +1,25 @@
 package siren
 
-import "gopkg.in/validator.v2"
+import (
+	"encoding/json"
+
+	"gopkg.in/validator.v2"
+)
 
 // Entity is a top-level resource in a siren API.
 type Entity struct {
+	BaseHref   Href             `json:"-"`
 	Entities   []EmbeddedEntity `json:"entities,omitempty"`
 	Links      []Link           `json:"links,omitempty"`
 	Actions    []Action         `json:"actions,omitempty"`
 	Properties Properties       `json:"properties,omitempty"`
 	Title      string           `json:"title,omitempty"`
 	Class      Classes          `json:"class,omitempty"`
-	baseURL    string
-}
-
-// NewEntity is a helper for creating a new entity instance.
-func NewEntity(base string) *Entity {
-	return &Entity{baseURL: base}
-}
-
-// WithTitle will set the title for this entity.
-// Calling multiple times will simply overwrite any previous value.
-func (e *Entity) WithTitle(title string) *Entity {
-	e.Title = title
-	return e
-}
-
-// WithClasses appends new class names to the entity.
-// Calling multiple times will continuously append.
-func (e *Entity) WithClasses(classes ...string) *Entity {
-	e.Class = append(e.Class, classes...)
-	return e
-}
-
-// WithProperties will merge new attributes to this entity.
-// Calling multiple times will continuously append.
-func (e *Entity) WithProperties(props Properties) *Entity {
-	if e.Properties == nil {
-		e.Properties = make(Properties)
-	}
-	e.Properties.Merge(props)
-	return e
-}
-
-// WithProperty is a helper for setting a single attribute.
-// Calling multiple times will continuously append.
-func (e *Entity) WithProperty(key string, value interface{}) *Entity {
-	return e.WithProperties(Properties{key: value})
-}
-
-// WithLink is a helper for adding a related resource link.
-// Calling multiple times will continuously append.
-func (e *Entity) WithLink(link *Link) *Entity {
-	e.Links = append(e.Links, *link)
-	return e
-}
-
-// WithAction is a helper for adding a related resource action.
-// Calling multiple times will continuously append.
-func (e *Entity) WithAction(action *Action) *Entity {
-	e.Actions = append(e.Actions, *action)
-	return e
-}
-
-// Embed is a helper for adding an embedded resource/link to this entity.
-// Calling multiple times will continuously append.
-func (e *Entity) Embed(entity *EmbeddedEntity) *Entity {
-	e.Entities = append(e.Entities, *entity)
-	return e
 }
 
 // Validate ensures that the entity, embedded entities, links and actions are
 // all well-formed.
-func (e *Entity) Validate() error {
+func (e Entity) Validate() error {
 	for _, ee := range e.Entities {
 		if err := validator.Validate(ee); err != nil {
 			return err
@@ -91,4 +39,39 @@ func (e *Entity) Validate() error {
 	}
 
 	return validator.Validate(e)
+}
+
+// WithBaseHref applies the given base href to the sub-entities, links and
+// actions.
+func (e Entity) WithBaseHref(base Href) Entity {
+	var entities []EmbeddedEntity
+	for _, embed := range e.Entities {
+		entities = append(entities, embed.WithBaseHref(base))
+	}
+
+	var links []Link
+	for _, link := range e.Links {
+		links = append(links, link.WithBaseHref(base))
+	}
+
+	var actions []Action
+	for _, action := range e.Actions {
+		actions = append(actions, action.WithBaseHref(base))
+	}
+
+	return Entity{
+		Entities:   entities,
+		Links:      links,
+		Actions:    actions,
+		Properties: e.Properties,
+		Title:      e.Title,
+		Class:      e.Class,
+	}
+}
+
+// MarshalJSON allows for custom JSON serialization that automatically applies
+// the BaseHref property to Href values throughout the entity.
+func (e Entity) MarshalJSON() ([]byte, error) {
+	type Alias Entity
+	return json.Marshal(Alias(e.WithBaseHref(e.BaseHref)))
 }

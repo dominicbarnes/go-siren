@@ -1,137 +1,186 @@
 package siren
 
 import (
+	"encoding/json"
+	"fmt"
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
-func TestNewEntity(t *testing.T) {
-	e := NewEntity("http://example.com")
-	assert.Equal(t, "http://example.com", e.baseURL)
+func TestEntityValidateEmpty(t *testing.T) {
+	e := Entity{}
+	require.NoError(t, e.Validate())
 }
 
-func TestEntityWithTitle(t *testing.T) {
-	e := NewEntity("").WithTitle("hello world")
-	assert.Equal(t, "hello world", e.Title)
+func TestEntityValidateValidEmbed(t *testing.T) {
+	e := Entity{
+		Entities: []EmbeddedEntity{
+			{Href: "/posts/1", Rel: Rels{"item"}},
+		},
+	}
+	require.NoError(t, e.Validate())
 }
 
-func TestEntityWithTitleMultiple(t *testing.T) {
-	e := NewEntity("").WithTitle("a").WithTitle("b")
-	assert.Equal(t, "b", e.Title)
+func TestEntityValidateInvalidEmbed(t *testing.T) {
+	e := Entity{
+		Entities: []EmbeddedEntity{
+			{},
+		},
+	}
+	require.Error(t, e.Validate())
 }
 
-func TestEntityWithClasses(t *testing.T) {
-	e := NewEntity("").WithClasses("a", "b", "c")
-	assert.EqualValues(t, Classes{"a", "b", "c"}, e.Class)
+func TestEntityValidateValidLink(t *testing.T) {
+	e := Entity{
+		Links: []Link{
+			{Href: "/", Rel: Rels{"self"}},
+		},
+	}
+	require.NoError(t, e.Validate())
 }
 
-func TestEntityWithClassesMultiple(t *testing.T) {
-	e := NewEntity("").WithClasses("a", "b").WithClasses("c", "d")
-	assert.EqualValues(t, Classes{"a", "b", "c", "d"}, e.Class)
+func TestEntityValidateInvalidLink(t *testing.T) {
+	e := Entity{
+		Links: []Link{
+			{},
+		},
+	}
+	require.Error(t, e.Validate())
 }
 
-func TestEntityWithProperties(t *testing.T) {
-	e := NewEntity("").WithProperties(Properties{"a": "A"})
-	assert.EqualValues(t, Properties{"a": "A"}, e.Properties)
+func TestEntityValidateValidAction(t *testing.T) {
+	e := Entity{
+		Actions: []Action{
+			{Name: "search", Href: "/search"},
+		},
+	}
+	require.NoError(t, e.Validate())
 }
 
-func TestEntityWithPropertiesMultiple(t *testing.T) {
-	e := NewEntity("").WithProperties(Properties{"a": "A"}).WithProperties(Properties{"b": "B"})
-	assert.EqualValues(t, Properties{"a": "A", "b": "B"}, e.Properties)
+func TestEntityValidateInvalidAction(t *testing.T) {
+	e := Entity{
+		Actions: []Action{
+			{},
+		},
+	}
+	require.Error(t, e.Validate())
 }
 
-func TestEntityWithProperty(t *testing.T) {
-	e := NewEntity("").WithProperty("a", "A")
-	assert.EqualValues(t, Properties{"a": "A"}, e.Properties)
+func TestEntityWithBaseHref(t *testing.T) {
+	e := Entity{
+		Entities: []EmbeddedEntity{
+			{Href: "/posts/1", Rel: Rels{"item"}},
+		},
+		Links: []Link{
+			{Href: "/", Rel: Rels{"self"}},
+		},
+		Actions: []Action{
+			{Name: "search", Href: "/search"},
+		},
+	}
+	expected := Entity{
+		Entities: []EmbeddedEntity{
+			{Href: "https://api.example.com/posts/1", Rel: Rels{"item"}},
+		},
+		Links: []Link{
+			{Href: "https://api.example.com/", Rel: Rels{"self"}},
+		},
+		Actions: []Action{
+			{Name: "search", Href: "https://api.example.com/search"},
+		},
+	}
+	actual := e.WithBaseHref("https://api.example.com")
+	require.EqualValues(t, expected, actual)
 }
 
-func TestEntityWithPropertyMultiple(t *testing.T) {
-	e := NewEntity("").WithProperty("a", "A").WithProperty("b", "B")
-	assert.EqualValues(t, Properties{"a": "A", "b": "B"}, e.Properties)
-}
+func TestEntityMarshalJSON(t *testing.T) {
+	expected, err := json.Marshal(Entity{
+		Entities: []EmbeddedEntity{
+			{Href: "https://api.example.com/posts/1", Rel: Rels{"item"}},
+		},
+		Links: []Link{
+			{Href: "https://api.example.com/", Rel: Rels{"self"}},
+		},
+		Actions: []Action{
+			{Name: "search", Href: "https://api.example.com/search"},
+		},
+	})
+	require.NoError(t, err)
 
-func TestEntityWithLink(t *testing.T) {
-	l := NewLink(Rels{"self"}, "/")
-	e := NewEntity("").WithLink(l)
-	assert.EqualValues(t, []Link{*l}, e.Links)
-}
+	actual, err := json.Marshal(Entity{
+		BaseHref: "https://api.example.com",
+		Entities: []EmbeddedEntity{
+			{Href: "/posts/1", Rel: Rels{"item"}},
+		},
+		Links: []Link{
+			{Href: "/", Rel: Rels{"self"}},
+		},
+		Actions: []Action{
+			{Name: "search", Href: "/search"},
+		},
+	})
+	require.NoError(t, err)
 
-func TestEntityWithLinkMultiple(t *testing.T) {
-	l1 := NewLink(Rels{"prev"}, "/posts/1")
-	l2 := NewLink(Rels{"next"}, "/posts/3")
-	e := NewEntity("").WithLink(l1).WithLink(l2)
-	assert.EqualValues(t, []Link{*l1, *l2}, e.Links)
-}
-
-func TestEntityWithAction(t *testing.T) {
-	a := NewAction("create", "POST", "/posts")
-	e := NewEntity("").WithAction(a)
-	assert.EqualValues(t, []Action{*a}, e.Actions)
-}
-
-func TestEntityWithActionMultiple(t *testing.T) {
-	a1 := NewAction("update", "PATCH", "/posts/1")
-	a2 := NewAction("delete", "DELETE", "/posts/1")
-	e := NewEntity("").WithAction(a1).WithAction(a2)
-	assert.EqualValues(t, []Action{*a1, *a2}, e.Actions)
-}
-
-func TestEntityEmbed(t *testing.T) {
-	ee := NewEmbeddedEntity(Rels{"item"})
-	e := NewEntity("").Embed(ee)
-	assert.EqualValues(t, []EmbeddedEntity{*ee}, e.Entities)
-}
-
-func TestEntityValidate(t *testing.T) {
-	e := NewEntity("")
-	assert.NoError(t, e.Validate())
-}
-
-func TestEntityValidateEntities(t *testing.T) {
-	ee := NewEmbeddedEntity(nil)
-	e := NewEntity("").Embed(ee)
-	assert.Error(t, e.Validate())
-}
-
-func TestEntityValidateLinks(t *testing.T) {
-	e := NewEntity("").WithLink(NewLink(nil, "/"))
-	assert.Error(t, e.Validate())
-}
-
-func TestEntityValidateActions(t *testing.T) {
-	e := NewEntity("").WithAction(NewAction("", "GET", "/"))
-	assert.Error(t, e.Validate())
+	require.EqualValues(t, expected, actual)
 }
 
 func ExampleEntity() {
-	NewEntity("http://api.x.io").
-		WithClasses("order").
-		WithProperties(Properties{
+	e := Entity{
+		BaseHref: "http://api.x.io",
+		Class:    Classes{"order"},
+		Properties: Properties{
 			"orderNumber": 42,
 			"itemCount":   3,
 			"status":      "pending",
-		}).
-		Embed(
-			NewEmbeddedLink(Rels{"http://x.io/rels/order-items"}, "/orders/42/items").
-				WithClasses("items", "collection"),
-		).
-		Embed(
-			NewEmbeddedEntity(Rels{"http://x.io/rels/customer"}).
-				WithProperties(Properties{
-					"customerId": "pj123",
-					"name":       "Peter Joseph",
-				}).
-				WithLink(NewLink(Rels{"self"}, "/customers/pj123")).
-				WithClasses("info", "customer"),
-		).
-		WithAction(NewAction("add-item", "POST", "/orders/42/items").
-			WithTitle("Add Item").
-			WithType("application/x-www-form-urlencoded").
-			WithField(NewActionField("orderNumber", "hidden").WithValue("42")).
-			WithField(NewActionField("productCode", "text")).
-			WithField(NewActionField("quantity", "number"))).
-		WithLink(NewLink(Rels{"self"}, "/orders/42")).
-		WithLink(NewLink(Rels{"previous"}, "/orders/41")).
-		WithLink(NewLink(Rels{"next"}, "/orders/43"))
+		},
+		Entities: []EmbeddedEntity{
+			{
+				Rel:  Rels{"http://x.io/rels/order-items"},
+				Href: "/orders/42/items",
+				Entity: Entity{
+					Class: Classes{"items", "collection"},
+				},
+			},
+			{
+				Rel:  Rels{"http://x.io/rels/customer"},
+				Href: "/orders/42/items",
+				Entity: Entity{
+					Class: Classes{"info", "customer"},
+					Properties: Properties{
+						"customerId": "pj123",
+						"name":       "Peter Joseph",
+					},
+					Links: []Link{
+						{Rel: Rels{"self"}, Href: "/customers/pj123"},
+					},
+				},
+			},
+		},
+		Actions: []Action{
+			{
+				Name:   "add-item",
+				Title:  "Add Item",
+				Method: "POST",
+				Href:   "/orders/42/items",
+				Type:   "application/x-www-form-urlencoded",
+				Fields: []ActionField{
+					{Name: "orderNumber", Type: "hidden", Value: 42},
+					{Name: "productCode", Type: "text"},
+					{Name: "quantity", Type: "number"},
+				},
+			},
+		},
+		Links: []Link{
+			{Rel: Rels{"self"}, Href: "/orders/42"},
+			{Rel: Rels{"previous"}, Href: "/orders/41"},
+			{Rel: Rels{"next"}, Href: "/orders/43"},
+		},
+	}
+
+	data, err := json.MarshalIndent(e, "", "  ")
+	if err != nil {
+		fmt.Println(err)
+	}
+	fmt.Println(data)
 }
