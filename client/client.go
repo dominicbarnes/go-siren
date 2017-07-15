@@ -58,17 +58,12 @@ func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*
 	} else {
 		switch action.GetType() {
 		case "application/x-www-form-urlencoded":
-			q := url.Values{}
-			for key, value := range data {
-				q.Set(key, fmt.Sprintf("%v", value))
-			}
-			body = strings.NewReader(q.Encode())
+			body, err = encodeForm(data)
 		case "application/json":
-			b, err := json.Marshal(data)
-			if err != nil {
-				return nil, err
-			}
-			body = bytes.NewBuffer(b)
+			body, err = encodeJSON(data)
+		}
+		if err != nil {
+			return nil, err
 		}
 	}
 
@@ -112,4 +107,20 @@ func (c *Client) entity(req *http.Request) (*siren.Entity, error) {
 		return nil, ErrInvalidSirenEntity
 	}
 	return &entity, nil
+}
+
+func encodeForm(data map[string]interface{}) (io.Reader, error) {
+	q := url.Values{}
+	for key, value := range data {
+		q.Set(key, fmt.Sprintf("%v", value))
+	}
+	return strings.NewReader(q.Encode()), nil
+}
+
+func encodeJSON(data map[string]interface{}) (io.Reader, error) {
+	b, err := json.Marshal(data)
+	if err != nil {
+		return nil, err
+	}
+	return bytes.NewBuffer(b), nil
 }
