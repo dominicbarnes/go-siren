@@ -1,6 +1,15 @@
 package siren
 
-import validator "gopkg.in/validator.v2"
+import (
+	"net/http"
+
+	validator "gopkg.in/validator.v2"
+)
+
+const (
+	ActionDefaultMethod = http.MethodGet
+	ActionDefaultType   = "application/x-www-form-urlencoded"
+)
 
 // Action is a description of an action to take on a related resource.
 type Action struct {
@@ -16,6 +25,22 @@ type Action struct {
 // Validate ensures that the link is well-formed.
 func (a Action) Validate() error {
 	return validator.Validate(a)
+}
+
+func (a Action) GetMethod() string {
+	if a.Method == "" {
+		return ActionDefaultMethod
+	}
+
+	return a.Method
+}
+
+func (a Action) GetType() string {
+	if a.Type == "" {
+		return ActionDefaultType
+	}
+
+	return a.Type
 }
 
 // WithBaseHref returns a copy of this action that applies the supplied base
