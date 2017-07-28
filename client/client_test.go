@@ -36,8 +36,9 @@ func (suite *ClientTestSuite) TestGet() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Get(ts.URL + "/entity")
+	entity, res, err := suite.client.Get(ts.URL + "/entity")
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -48,8 +49,27 @@ func (suite *ClientTestSuite) TestGetInvalidMediaType() {
 		w.Write([]byte("hello world"))
 	}))
 
-	entity, err := suite.client.Get(ts.URL)
-	suite.EqualValues(err, ErrInvalidMediaType)
+	entity, res, err := suite.client.Get(ts.URL)
+	suite.NoError(err)
+	suite.NotNil(res)
+	suite.Nil(entity)
+
+	body, err := ioutil.ReadAll(res.Body)
+	suite.NoError(err)
+	suite.EqualValues("hello world", body)
+}
+
+func (suite *ClientTestSuite) TestGetInvalidURL() {
+	entity, res, err := suite.client.Get(":")
+	suite.Error(err)
+	suite.Nil(res)
+	suite.Nil(entity)
+}
+
+func (suite *ClientTestSuite) TestGetEmptyURL() {
+	entity, res, err := suite.client.Get("")
+	suite.Error(err)
+	suite.Nil(res)
 	suite.Nil(entity)
 }
 
@@ -60,8 +80,9 @@ func (suite *ClientTestSuite) TestGetInvalidSirenEntity() {
 		w.Write([]byte(`{"class":1}`)) // will not unmarshal
 	}))
 
-	entity, err := suite.client.Get(ts.URL)
+	entity, res, err := suite.client.Get(ts.URL)
 	suite.EqualValues(err, ErrInvalidSirenEntity)
+	suite.NotNil(res)
 	suite.Nil(entity)
 }
 
@@ -77,12 +98,33 @@ func (suite *ClientTestSuite) TestFollow() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Follow(siren.Link{
+	entity, res, err := suite.client.Follow(siren.Link{
 		Href: siren.Href(ts.URL + "/entity"),
 		Rel:  siren.Rels{"self"},
 	})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
+}
+
+func (suite *ClientTestSuite) TestFollowEmptyHref() {
+	entity, res, err := suite.client.Follow(siren.Link{
+		Href: siren.Href(""),
+		Rel:  siren.Rels{"invalid"},
+	})
+	suite.Error(err)
+	suite.Nil(res)
+	suite.Nil(entity)
+}
+
+func (suite *ClientTestSuite) TestFollowInvalidHref() {
+	entity, res, err := suite.client.Follow(siren.Link{
+		Href: siren.Href(":"),
+		Rel:  siren.Rels{"invalid"},
+	})
+	suite.Error(err)
+	suite.Nil(res)
+	suite.Nil(entity)
 }
 
 func (suite *ClientTestSuite) TestSubmit() {
@@ -97,12 +139,13 @@ func (suite *ClientTestSuite) TestSubmit() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
 	}, nil)
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -120,11 +163,12 @@ func (suite *ClientTestSuite) TestSubmitGetQuery() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name: "do-stuff",
 		Href: siren.Href(ts.URL + "/entity"),
 	}, map[string]interface{}{"foo": "bar"})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -144,12 +188,13 @@ func (suite *ClientTestSuite) TestSubmitPostForm() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
 	}, map[string]interface{}{"foo": "bar"})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -169,13 +214,14 @@ func (suite *ClientTestSuite) TestSubmitPostFormExplicit() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
 		Type:   "application/x-www-form-urlencoded",
 	}, map[string]interface{}{"foo": "bar"})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -195,13 +241,14 @@ func (suite *ClientTestSuite) TestSubmitPatchJSON() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPatch,
 		Href:   siren.Href(ts.URL + "/entity"),
 		Type:   "application/json",
 	}, map[string]interface{}{"foo": "bar"})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -221,12 +268,13 @@ func (suite *ClientTestSuite) TestSubmitNoData() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodDelete,
 		Href:   siren.Href(ts.URL + "/entity"),
 	}, nil)
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -246,7 +294,7 @@ func (suite *ClientTestSuite) TestSubmitDefaultData() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
@@ -255,6 +303,7 @@ func (suite *ClientTestSuite) TestSubmitDefaultData() {
 		},
 	}, nil)
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
 }
 
@@ -274,7 +323,7 @@ func (suite *ClientTestSuite) TestSubmitDefaultDataWithUserData() {
 		w.Write([]byte(`{}`))
 	}))
 
-	entity, err := suite.client.Submit(siren.Action{
+	entity, res, err := suite.client.Submit(siren.Action{
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
@@ -283,5 +332,34 @@ func (suite *ClientTestSuite) TestSubmitDefaultDataWithUserData() {
 		},
 	}, map[string]interface{}{"foo": "baz"})
 	suite.NoError(err)
+	suite.NotNil(res)
 	suite.EqualValues(entity, new(siren.Entity))
+}
+
+func (suite *ClientTestSuite) TestSubmitInvalidHref() {
+	entity, res, err := suite.client.Submit(siren.Action{
+		Name:   "do-stuff",
+		Method: http.MethodPost,
+		Href:   siren.Href(":"),
+		Fields: []siren.ActionField{
+			{Name: "foo", Value: "bar"},
+		},
+	}, nil)
+	suite.Error(err)
+	suite.Nil(res)
+	suite.Nil(entity)
+}
+
+func (suite *ClientTestSuite) TestSubmitEmptyHref() {
+	entity, res, err := suite.client.Submit(siren.Action{
+		Name:   "do-stuff",
+		Method: http.MethodPost,
+		Href:   siren.Href(""),
+		Fields: []siren.ActionField{
+			{Name: "foo", Value: "bar"},
+		},
+	}, nil)
+	suite.Error(err)
+	suite.Nil(res)
+	suite.Nil(entity)
 }

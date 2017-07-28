@@ -25,25 +25,35 @@ func New() *Client {
 // Get retrieves the entity at the given href. This is generally used for the
 // entry-point of your application, so prefer using Follow subsequently as your
 // user navigates the API.
-func (c *Client) Get(href string) (*siren.Entity, error) {
-	req, err := http.NewRequest(http.MethodGet, href, nil)
+func (c *Client) Get(href string) (*siren.Entity, *http.Response, error) {
+	req, err := c.get(href, siren.MediaType)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
-	return c.entity(req)
+	return c.request(req)
 }
 
 // Follow fetches the entity behind the given siren link.
-func (c *Client) Follow(link siren.Link) (*siren.Entity, error) {
-	return c.Get(string(link.Href))
+func (c *Client) Follow(link siren.Link) (*siren.Entity, *http.Response, error) {
+	mediaType := link.Type
+	if mediaType == "" {
+		mediaType = siren.MediaType
+	}
+
+	req, err := c.get(string(link.Href), mediaType)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	return c.request(req)
 }
 
 // Submit triggers the given action with data supplied by the user.
-func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*siren.Entity, error) {
+func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*siren.Entity, *http.Response, error) {
 	u, err := url.Parse(string(action.Href))
 	if err != nil {
-		return nil, err
+		return nil, nil, err
 	}
 
 	var body io.Reader
@@ -63,18 +73,49 @@ func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*
 			body, err = encodeJSON(data)
 		}
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 	}
 
 	req, err := http.NewRequest(method, u.String(), body)
 	if err != nil {
+		return nil, nil, err
+	}
+
+	req.Header.Set("accept", siren.MediaType)
+	req.Header.Set("content-type", action.GetType())
+
+	return c.request(req)
+}
+
+func (c *Client) request(req *http.Request) (*siren.Entity, *http.Response, error) {
+	res, err := c.http.Do(req)
+	if err != nil {
+		return nil, nil, err
+	}
+
+	if res.Header.Get("content-type") == siren.MediaType {
+		entity, err := c.decodeEntity(res)
+		if err != nil {
+			return nil, res, err
+		}
+		return entity, res, nil
+	} else {
+		return nil, res, nil
+	}
+}
+
+func (c *Client) get(url, mediaType string) (*http.Request, error) {
+	req, err := http.NewRequest(http.MethodGet, url, nil)
+	if err != nil {
 		return nil, err
 	}
 
-	req.Header.Set("content-type", action.GetType())
+	if mediaType != "" {
+		req.Header.Set("accept", mediaType)
+	}
 
-	return c.entity(req)
+	return req, nil
 }
 
 func (c *Client) data(action siren.Action, userData map[string]interface{}) map[string]interface{} {
@@ -91,15 +132,8 @@ func (c *Client) data(action siren.Action, userData map[string]interface{}) map[
 	return data
 }
 
-func (c *Client) entity(req *http.Request) (*siren.Entity, error) {
-	req.Header.Set("accept", siren.MediaType)
-
-	res, err := c.http.Do(req)
-	if err != nil {
-		return nil, err
-	} else if res.Header.Get("content-type") != siren.MediaType {
-		return nil, ErrInvalidMediaType
-	}
+func (c *Client) decodeEntity(res *http.Response) (*siren.Entity, error) {
+	defer res.Body.Close()
 
 	var entity siren.Entity
 	d := json.NewDecoder(res.Body)
