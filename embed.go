@@ -1,6 +1,8 @@
 package siren
 
-import validator "gopkg.in/validator.v2"
+import (
+	validator "gopkg.in/validator.v2"
+)
 
 // EmbeddedEntity is a resource/link that is embedded within a parent entity.
 // An embedded resource may contain all the same attributes as any other Entity,

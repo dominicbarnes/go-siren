@@ -7,8 +7,13 @@ import (
 )
 
 const (
+	// ActionDefaultMethod is the default method for an action when one is not
+	// specified by the server.
 	ActionDefaultMethod = http.MethodGet
-	ActionDefaultType   = "application/x-www-form-urlencoded"
+
+	// ActionDefaultType is the default media type for the action when one is not
+	// specified by the server.
+	ActionDefaultType = "application/x-www-form-urlencoded"
 )
 
 // Action is a description of an action to take on a related resource.
@@ -27,6 +32,9 @@ func (a Action) Validate() error {
 	return validator.Validate(a)
 }
 
+// GetMethod is a helper for getting the HTTP method for an action. When the
+// action is not explicit, ActionDefaultMethod will be returned. This is a
+// convenience method offered for clients.
 func (a Action) GetMethod() string {
 	if a.Method == "" {
 		return ActionDefaultMethod
@@ -35,6 +43,9 @@ func (a Action) GetMethod() string {
 	return a.Method
 }
 
+// GetType is a helper for getting the media type for the action request body.
+// When the action is not explicit, ActionDefaultType will be returned. This is
+// a convenience method offered for clients.
 func (a Action) GetType() string {
 	if a.Type == "" {
 		return ActionDefaultType

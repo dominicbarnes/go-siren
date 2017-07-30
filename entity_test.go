@@ -1,134 +1,99 @@
-package siren
+package siren_test
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"testing"
+
+	. "github.com/dominicbarnes/go-siren"
 
 	"github.com/stretchr/testify/require"
 )
 
-func TestEntityValidateEmpty(t *testing.T) {
-	e := Entity{}
-	require.NoError(t, e.Validate())
-}
-
-func TestEntityValidateValidEmbed(t *testing.T) {
-	e := Entity{
-		Entities: []EmbeddedEntity{
-			{Href: "/posts/1", Rel: Rels{"item"}},
+func TestEntityValidate(t *testing.T) {
+	RunValidatorTests(t, map[string]ValidatorSpec{
+		"empty": {
+			Input: Entity{},
 		},
-	}
-	require.NoError(t, e.Validate())
-}
-
-func TestEntityValidateInvalidEmbed(t *testing.T) {
-	e := Entity{
-		Entities: []EmbeddedEntity{
-			{},
+		"valid embed": {
+			Input: Entity{
+				Entities: []EmbeddedEntity{
+					{Href: "/posts/1", Rel: Rels{"item"}},
+				},
+			},
 		},
-	}
-	require.Error(t, e.Validate())
-}
-
-func TestEntityValidateValidLink(t *testing.T) {
-	e := Entity{
-		Links: []Link{
-			{Href: "/", Rel: Rels{"self"}},
+		"invalid embed": {
+			Input: Entity{
+				Entities: []EmbeddedEntity{
+					{}, // empty is invalid
+				},
+			},
+			Expected: errors.New("Rel: zero value"),
 		},
-	}
-	require.NoError(t, e.Validate())
-}
-
-func TestEntityValidateInvalidLink(t *testing.T) {
-	e := Entity{
-		Links: []Link{
-			{},
+		"valid link": {
+			Input: Entity{
+				Links: []Link{
+					{Href: "/", Rel: Rels{"self"}},
+				},
+			},
 		},
-	}
-	require.Error(t, e.Validate())
-}
-
-func TestEntityValidateValidAction(t *testing.T) {
-	e := Entity{
-		Actions: []Action{
-			{Name: "search", Href: "/search"},
+		"invalid link": {
+			Input: Entity{
+				Links: []Link{
+					{}, // empty is invalid
+				},
+			},
+			Expected: errors.New("Rel: zero value"),
 		},
-	}
-	require.NoError(t, e.Validate())
-}
-
-func TestEntityValidateInvalidAction(t *testing.T) {
-	e := Entity{
-		Actions: []Action{
-			{},
+		"valid action": {
+			Input: Entity{
+				Actions: []Action{
+					{Name: "search", Href: "/search"},
+				},
+			},
 		},
-	}
-	require.Error(t, e.Validate())
-}
-
-func TestEntityWithBaseHref(t *testing.T) {
-	e := Entity{
-		Entities: []EmbeddedEntity{
-			{Href: "/posts/1", Rel: Rels{"item"}},
-		},
-		Links: []Link{
-			{Href: "/", Rel: Rels{"self"}},
-		},
-		Actions: []Action{
-			{Name: "search", Href: "/search"},
-		},
-	}
-	expected := Entity{
-		Entities: []EmbeddedEntity{
-			{Href: "https://api.example.com/posts/1", Rel: Rels{"item"}},
-		},
-		Links: []Link{
-			{Href: "https://api.example.com/", Rel: Rels{"self"}},
-		},
-		Actions: []Action{
-			{Name: "search", Href: "https://api.example.com/search"},
-		},
-	}
-	actual := e.WithBaseHref("https://api.example.com")
-	require.EqualValues(t, expected, actual)
-}
-
-func TestEntityMarshalJSON(t *testing.T) {
-	expected, err := json.Marshal(Entity{
-		Entities: []EmbeddedEntity{
-			{Href: "https://api.example.com/posts/1", Rel: Rels{"item"}},
-		},
-		Links: []Link{
-			{Href: "https://api.example.com/", Rel: Rels{"self"}},
-		},
-		Actions: []Action{
-			{Name: "search", Href: "https://api.example.com/search"},
+		"invalid action": {
+			Input: Entity{
+				Actions: []Action{
+					{}, // empty is invalid
+				},
+			},
+			Expected: errors.New("Name: zero value"),
 		},
 	})
-	require.NoError(t, err)
 
-	actual, err := json.Marshal(Entity{
-		BaseHref: "https://api.example.com",
-		Entities: []EmbeddedEntity{
-			{Href: "/posts/1", Rel: Rels{"item"}},
-		},
-		Links: []Link{
-			{Href: "/", Rel: Rels{"self"}},
-		},
-		Actions: []Action{
-			{Name: "search", Href: "/search"},
-		},
+	t.Run("WithBaseHref()", func(t *testing.T) {
+		e := Entity{
+			Entities: []EmbeddedEntity{
+				{Href: "/posts/1", Rel: Rels{"item"}},
+			},
+			Links: []Link{
+				{Href: "/", Rel: Rels{"self"}},
+			},
+			Actions: []Action{
+				{Name: "search", Href: "/search"},
+			},
+		}
+		expected := Entity{
+			Entities: []EmbeddedEntity{
+				{Href: "https://api.example.com/posts/1", Rel: Rels{"item"}},
+			},
+			Links: []Link{
+				{Href: "https://api.example.com/", Rel: Rels{"self"}},
+			},
+			Actions: []Action{
+				{Name: "search", Href: "https://api.example.com/search"},
+			},
+		}
+		actual := e.WithBaseHref("https://api.example.com")
+		require.EqualValues(t, expected, actual)
 	})
-	require.NoError(t, err)
-
-	require.EqualValues(t, expected, actual)
 }
 
 func ExampleEntity() {
 	e := Entity{
-		BaseHref: "http://api.x.io",
-		Class:    Classes{"order"},
+		Class: Classes{"order"},
 		Properties: Properties{
 			"orderNumber": 42,
 			"itemCount":   3,
@@ -178,7 +143,7 @@ func ExampleEntity() {
 		},
 	}
 
-	data, err := json.MarshalIndent(e, "", "  ")
+	data, err := json.MarshalIndent(e.WithBaseHref("http://api.x.io"), "", "  ")
 	if err != nil {
 		fmt.Println(err)
 	}

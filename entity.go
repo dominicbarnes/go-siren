@@ -1,14 +1,11 @@
 package siren
 
 import (
-	"encoding/json"
-
 	"gopkg.in/validator.v2"
 )
 
 // Entity is a top-level resource in a siren API.
 type Entity struct {
-	BaseHref   Href             `json:"-"`
 	Entities   []EmbeddedEntity `json:"entities,omitempty"`
 	Links      []Link           `json:"links,omitempty"`
 	Actions    []Action         `json:"actions,omitempty"`
@@ -67,11 +64,4 @@ func (e Entity) WithBaseHref(base Href) Entity {
 		Title:      e.Title,
 		Class:      e.Class,
 	}
-}
-
-// MarshalJSON allows for custom JSON serialization that automatically applies
-// the BaseHref property to Href values throughout the entity.
-func (e Entity) MarshalJSON() ([]byte, error) {
-	type Alias Entity
-	return json.Marshal(Alias(e.WithBaseHref(e.BaseHref)))
 }
