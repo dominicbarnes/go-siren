@@ -70,9 +70,9 @@ func (a Action) WithBaseHref(base Href) Action {
 
 // ActionField is a single field within the larger action.
 type ActionField struct {
-	Name  string      `json:"name" validate:"nonzero"`
-	Type  string      `json:"type,omitempty"`
-	Value interface{} `json:"value,omitempty"`
-	Title string      `json:"title,omitempty"`
-	Class Classes     `json:"class,omitempty"`
+	Name  string  `json:"name" validate:"nonzero"`
+	Type  string  `json:"type,omitempty"`
+	Value any     `json:"value,omitempty"`
+	Title string  `json:"title,omitempty"`
+	Class Classes `json:"class,omitempty"`
 }

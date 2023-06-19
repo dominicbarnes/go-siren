@@ -16,50 +16,66 @@ func TestEntityValidate(t *testing.T) {
 		"empty": {
 			Input: Entity{},
 		},
-		"valid embed": {
+		"embed valid": {
 			Input: Entity{
 				Entities: []EmbeddedEntity{
 					{Href: "/posts/1", Rel: Rels{"item"}},
 				},
 			},
 		},
-		"invalid embed": {
+		"embed missing rel": {
 			Input: Entity{
 				Entities: []EmbeddedEntity{
-					{}, // empty is invalid
+					{},
 				},
 			},
 			Expected: errors.New("Rel: zero value"),
 		},
-		"valid link": {
+		"link valid": {
 			Input: Entity{
 				Links: []Link{
 					{Href: "/", Rel: Rels{"self"}},
 				},
 			},
 		},
-		"invalid link": {
+		"link missing rel": {
 			Input: Entity{
 				Links: []Link{
-					{}, // empty is invalid
+					{Href: "/"},
 				},
 			},
 			Expected: errors.New("Rel: zero value"),
 		},
-		"valid action": {
+		"link missing href": {
+			Input: Entity{
+				Links: []Link{
+					{Rel: Rels{"self"}},
+				},
+			},
+			Expected: errors.New("Href: zero value"),
+		},
+		"action valid": {
 			Input: Entity{
 				Actions: []Action{
 					{Name: "search", Href: "/search"},
 				},
 			},
 		},
-		"invalid action": {
+		"action missing name": {
 			Input: Entity{
 				Actions: []Action{
-					{}, // empty is invalid
+					{Href: "/search"},
 				},
 			},
 			Expected: errors.New("Name: zero value"),
+		},
+		"action missing href": {
+			Input: Entity{
+				Actions: []Action{
+					{Name: "search"},
+				},
+			},
+			Expected: errors.New("Href: zero value"),
 		},
 	})
 

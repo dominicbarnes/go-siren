@@ -123,7 +123,7 @@ func (suite *ClientTestSuite) TestSubmitGetQuery() {
 	entity, err := suite.client.Submit(siren.Action{
 		Name: "do-stuff",
 		Href: siren.Href(ts.URL + "/entity"),
-	}, map[string]interface{}{"foo": "bar"})
+	}, map[string]any{"foo": "bar"})
 	suite.NoError(err)
 	suite.EqualValues(entity, new(siren.Entity))
 }
@@ -148,7 +148,7 @@ func (suite *ClientTestSuite) TestSubmitPostForm() {
 		Name:   "do-stuff",
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
-	}, map[string]interface{}{"foo": "bar"})
+	}, map[string]any{"foo": "bar"})
 	suite.NoError(err)
 	suite.EqualValues(entity, new(siren.Entity))
 }
@@ -174,7 +174,7 @@ func (suite *ClientTestSuite) TestSubmitPostFormExplicit() {
 		Method: http.MethodPost,
 		Href:   siren.Href(ts.URL + "/entity"),
 		Type:   "application/x-www-form-urlencoded",
-	}, map[string]interface{}{"foo": "bar"})
+	}, map[string]any{"foo": "bar"})
 	suite.NoError(err)
 	suite.EqualValues(entity, new(siren.Entity))
 }
@@ -200,7 +200,7 @@ func (suite *ClientTestSuite) TestSubmitPatchJSON() {
 		Method: http.MethodPatch,
 		Href:   siren.Href(ts.URL + "/entity"),
 		Type:   "application/json",
-	}, map[string]interface{}{"foo": "bar"})
+	}, map[string]any{"foo": "bar"})
 	suite.NoError(err)
 	suite.EqualValues(entity, new(siren.Entity))
 }
@@ -281,7 +281,7 @@ func (suite *ClientTestSuite) TestSubmitDefaultDataWithUserData() {
 		Fields: []siren.ActionField{
 			{Name: "foo", Value: "bar"},
 		},
-	}, map[string]interface{}{"foo": "baz"})
+	}, map[string]any{"foo": "baz"})
 	suite.NoError(err)
 	suite.EqualValues(entity, new(siren.Entity))
 }

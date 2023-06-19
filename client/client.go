@@ -40,7 +40,7 @@ func (c *Client) Follow(link siren.Link) (*siren.Entity, error) {
 }
 
 // Submit triggers the given action with data supplied by the user.
-func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*siren.Entity, error) {
+func (c *Client) Submit(action siren.Action, userData map[string]any) (*siren.Entity, error) {
 	u, err := url.Parse(string(action.Href))
 	if err != nil {
 		return nil, err
@@ -77,8 +77,8 @@ func (c *Client) Submit(action siren.Action, userData map[string]interface{}) (*
 	return c.entity(req)
 }
 
-func (c *Client) data(action siren.Action, userData map[string]interface{}) map[string]interface{} {
-	data := make(map[string]interface{})
+func (c *Client) data(action siren.Action, userData map[string]any) map[string]any {
+	data := make(map[string]any)
 
 	for _, field := range action.Fields {
 		data[field.Name] = field.Value
@@ -109,7 +109,7 @@ func (c *Client) entity(req *http.Request) (*siren.Entity, error) {
 	return &entity, nil
 }
 
-func encodeForm(data map[string]interface{}) (io.Reader, error) {
+func encodeForm(data map[string]any) (io.Reader, error) {
 	q := url.Values{}
 	for key, value := range data {
 		q.Set(key, fmt.Sprintf("%v", value))
@@ -117,7 +117,7 @@ func encodeForm(data map[string]interface{}) (io.Reader, error) {
 	return strings.NewReader(q.Encode()), nil
 }
 
-func encodeJSON(data map[string]interface{}) (io.Reader, error) {
+func encodeJSON(data map[string]any) (io.Reader, error) {
 	b, err := json.Marshal(data)
 	if err != nil {
 		return nil, err
